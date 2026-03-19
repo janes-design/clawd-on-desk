@@ -23,6 +23,7 @@
 - **子代理感知** — 1 个子代理杂耍，2 个以上指挥
 - **位置记忆** — 重启后 Clawd 回到上次的位置
 - **单实例锁** — 防止重复启动
+- **极简模式** — 拖到右边缘或右键"极简模式"；Clawd 藏在屏幕边缘，悬停探头招手，通知/完成有迷你动画，抛物线跳跃过渡
 - **系统托盘** — 调大小（S/M/L）、免打扰模式、开机自启
 
 ## 状态映射
@@ -41,6 +42,18 @@
 | PreCompact | 扫地 | 扫帚清扫 | <img src="assets/gif/clawd-sweeping.gif" width="200"> |
 | WorktreeCreate | 搬运 | 搬箱子 | <img src="assets/gif/clawd-carrying.gif" width="200"> |
 | 60 秒无事件 | 睡觉 | 睡眠序列 | <img src="assets/gif/clawd-sleeping.gif" width="200"> |
+
+### 极简模式
+
+将 Clawd 拖到屏幕右边缘（或右键 →"极简模式"）进入。Clawd 藏在屏幕边缘只露出半身，鼠标悬停时探出来招手。
+
+| 触发 | 极简反应 |
+|---|---|
+| 默认 | 呼吸 + 眨眼 + 偶尔手臂晃动 + 眼球追踪 |
+| 鼠标悬停 | 探出身体 + 招手（向屏幕内侧滑出 25px） |
+| 通知 / 权限请求 | 感叹号弹出 + >< 挤眼 |
+| 任务完成 | 花花 + ^^ 眯眼 + 星星闪烁 |
+| Peek 时点击 | 退出极简模式（抛物线跳回） |
 
 ## 快速开始
 
@@ -81,6 +94,9 @@ curl -X POST http://127.0.0.1:23333/state \
 
 # 循环播放所有动画（每个 8 秒）
 bash test-demo.sh
+
+# 循环播放极简模式动画
+bash test-mini.sh
 ```
 
 ## 项目结构
@@ -95,7 +111,7 @@ hooks/
   clawd-hook.js  # Claude Code hook 脚本（零依赖，1 秒超时）
   install.js     # 安全注册 hook 到 ~/.claude/settings.json
 assets/
-  svg/           # 29 个像素风 SVG 动画（CSS 关键帧驱动）
+  svg/           # 35 个像素风 SVG 动画（含 6 个极简模式，CSS 关键帧驱动）
   gif/           # 录制的 GIF（用于文档展示）
 ```
 

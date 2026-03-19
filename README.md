@@ -23,6 +23,7 @@ A desktop pet that reacts to your [Claude Code](https://docs.anthropic.com/en/do
 - **Subagent awareness** — juggling for 1 subagent, conducting for 2+
 - **Position memory** — Clawd remembers where you left it across restarts
 - **Single instance lock** — prevents duplicate Clawd windows
+- **Mini mode** — drag to right edge or right-click "极简模式"; Clawd hides at screen edge with peek-on-hover, mini alerts/celebrations, and parabolic jump transitions
 - **System tray** — resize (S/M/L), do-not-disturb mode, auto-start toggle
 
 ## State Mapping
@@ -41,6 +42,18 @@ A desktop pet that reacts to your [Claude Code](https://docs.anthropic.com/en/do
 | PreCompact | sweeping | Broom sweep | <img src="assets/gif/clawd-sweeping.gif" width="200"> |
 | WorktreeCreate | carrying | Carrying box | <img src="assets/gif/clawd-carrying.gif" width="200"> |
 | 60s no events | sleeping | Sleep sequence | <img src="assets/gif/clawd-sleeping.gif" width="200"> |
+
+### Mini Mode
+
+Drag Clawd to the right screen edge (or right-click → "极简模式") to enter mini mode. Clawd hides behind the screen edge with half-body visible, peeking out when you hover.
+
+| Trigger | Mini Reaction |
+|---|---|
+| Default | Breathing + blinking + occasional arm wobble + eye tracking |
+| Hover | Peek out + wave (slides 25px into screen) |
+| Notification / PermissionRequest | Exclamation mark pop + >< squint eyes |
+| Stop / PostCompact | Flower + ^^ happy eyes + sparkles |
+| Click during peek | Exit mini mode (parabolic jump back) |
 
 ## Quick Start
 
@@ -81,6 +94,9 @@ curl -X POST http://127.0.0.1:23333/state \
 
 # Cycle through all animations (8s each)
 bash test-demo.sh
+
+# Cycle through mini mode animations
+bash test-mini.sh
 ```
 
 ## Project Structure
@@ -95,7 +111,7 @@ hooks/
   clawd-hook.js  # Claude Code hook script (zero deps, 1s timeout)
   install.js     # Safe hook registration into ~/.claude/settings.json
 assets/
-  svg/           # 29 pixel-art SVG animations with CSS keyframes
+  svg/           # 35 pixel-art SVG animations with CSS keyframes (incl. 6 mini mode)
   gif/           # Recorded GIFs for documentation
 ```
 

@@ -12,8 +12,12 @@ CLAUDE.md
 
 # Development plans & review notes
 PLAN.md
-PLAN-click-reaction.md
+PLAN-*.md
 codex-*.md
+
+# Temp files from testing
+.tmp_*
+*.tmp
 
 # Third-party reference repo
 clawd-tank/
