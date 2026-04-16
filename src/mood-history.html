@@ -48,7 +48,13 @@
     }
 
     /* ── Header ─────────────────────────────────────────────────────────── */
-    .header { margin-bottom: 20px; }
+    .header {
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 12px;
+    }
 
     h1 {
       font-family: Georgia, serif; /* Anthropic Serif → Georgia */
@@ -65,6 +71,18 @@
       font-weight: 400;
       color: var(--text-3);       /* Stone Gray — tertiary metadata */
       line-height: 1.60;
+    }
+
+    .vibe {
+      font-family: Georgia, serif;
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--text-2);
+      text-align: right;
+      line-height: 1.40;
+      white-space: nowrap;
+      flex-shrink: 0;
+      padding-bottom: 2px; /* optical align with date baseline */
     }
 
     /* ── Stacked bar ─────────────────────────────────────────────────────── */
@@ -89,50 +107,36 @@
       margin-bottom: 16px;
     }
 
-    /* ── Stat grid ───────────────────────────────────────────────────────────
-       GIF geometry: 160px tall, top: -80px → 80px above card, 80px inside card.
-       Card padding-top: 88px → 80px clears GIF + 8px breathing room.
-       Grid padding-top: 80px → matches the above-card overhang.
-    ── */
+    /* ── Stat grid ── responsive, min 260px per card ── */
     .grid {
       display: grid;
-      grid-template-columns: repeat(2, 1fr);
-      gap: 10px;
+      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      gap: 8px;
       margin-bottom: 20px;
-      padding-top: 80px;
-    }
-
-    .stat-wrap {
-      position: relative;
-    }
-
-    .stat-gif {
-      position: absolute;
-      top: -80px;
-      left: 16px;
-      width: 160px;
-      height: 160px;
-      object-fit: contain;
-      image-rendering: pixelated;
-      z-index: 1;
     }
 
     .stat {
       background: var(--card);
       border: 1px solid var(--border);
       border-radius: 8px;
-      padding: 88px 16px 16px;
+      padding: 12px 0 12px 20px;
       display: flex;
-      flex-direction: column;
-      align-items: flex-start;
+      flex-direction: row;
+      align-items: center;
+      justify-content: space-between;
       box-shadow: 0px 0px 0px 1px var(--ring);
       transition: box-shadow 0.15s ease;
+      overflow: hidden;
+      min-height: 80px;
     }
     .stat:hover {
       box-shadow: 0px 0px 0px 1px var(--ring), rgba(0,0,0,0.05) 0px 4px 24px;
     }
 
-    .stat-body { width: 100%; }
+    .stat-body {
+      flex: 1;
+      min-width: 0;
+    }
 
     .stat-label {
       font-size: 11px;
@@ -147,6 +151,7 @@
       display: flex;
       align-items: center;
       gap: 6px;
+      margin-bottom: 2px;
     }
 
     .stat-swatch {
@@ -158,12 +163,21 @@
     }
 
     .stat-time {
-      font-family: Georgia, serif;               /* Serif for the key number */
-      font-size: 18px;
+      font-family: Georgia, serif;
+      font-size: 28px;
       font-weight: 500;
       color: var(--text);
-      line-height: 1.20;
+      line-height: 1.10;
       font-variant-numeric: tabular-nums;
+    }
+
+    .stat-gif {
+      width: 100px;
+      height: 100px;
+      object-fit: contain;
+      image-rendering: pixelated;
+      flex-shrink: 0;
+      align-self: flex-end;
     }
 
     /* ── Footer total ────────────────────────────────────────────────────── */
@@ -194,8 +208,11 @@
 </head>
 <body>
   <div class="header">
-    <h1>Today's Mood</h1>
-    <div class="date" id="date-label"></div>
+    <div>
+      <h1>Today's Mood</h1>
+      <div class="date" id="date-label"></div>
+    </div>
+    <div class="vibe" id="vibe"></div>
   </div>
 
   <div class="bar-wrap" id="bar"></div>
@@ -282,6 +299,7 @@
 
       if (grandTotal === 0) {
         grid.style.display = "none";
+        document.getElementById("vibe").textContent = "";
         document.getElementById("footer").innerHTML = `
           <div class="empty">
             <div class="empty-title">No activity yet</div>
@@ -293,23 +311,32 @@
       grid.style.display = "grid";
       for (const g of GROUPS) {
         if (!totals[g.key]) continue;
-        const wrap = document.createElement("div");
-        wrap.className = "stat-wrap";
-        wrap.innerHTML = `
-          <img class="stat-gif" src="${g.gif}" alt="${g.label}" />
-          <div class="stat">
-            <div class="stat-body">
-              <div class="stat-label">
-                <span class="stat-swatch" style="background:${g.color}"></span>${g.label}
-              </div>
-              <div class="stat-time">${fmtDuration(totals[g.key])}</div>
+        const card = document.createElement("div");
+        card.className = "stat";
+        card.innerHTML = `
+          <div class="stat-body">
+            <div class="stat-label">
+              <span class="stat-swatch" style="background:${g.color}"></span>${g.label}
             </div>
-          </div>`;
-        grid.appendChild(wrap);
+            <div class="stat-time">${fmtDuration(totals[g.key])}</div>
+          </div>
+          <img class="stat-gif" src="${g.gif}" alt="${g.label}" />`;
+        grid.appendChild(card);
       }
 
-      document.getElementById("footer").textContent =
-        `${fmtDuration(grandTotal)} tracked today`;
+      const dominant = GROUPS.reduce((a, b) => totals[a.key] >= totals[b.key] ? a : b);
+      const VIBES = {
+        working:      t => `${t} of heads-down focus 💻`,
+        thinking:     t => `${t} spent in deep thought 🤔`,
+        done:         t => `${t} of wins today 🎉`,
+        notification: t => `${t} of pings & nudges 🔔`,
+        error:        t => `${t} of debugging adventures 🐛`,
+        idle:         t => `${t} of quiet companionship 👀`,
+        sleeping:     t => `${t} of beauty sleep 😴`,
+      };
+      const vibe = VIBES[dominant.key] || (t => `${t} tracked today`);
+      document.getElementById("vibe").textContent = vibe(fmtDuration(grandTotal));
+      document.getElementById("footer").textContent = "";
     }
 
     render();
