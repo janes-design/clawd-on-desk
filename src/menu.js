@@ -431,6 +431,11 @@ module.exports = function initMenu(ctx) {
   function buildContextMenu() {
     const template = [
       {
+        label: t("moodHistory"),
+        click: () => ctx.openMoodHistoryWindow(),
+      },
+      { type: "separator" },
+      {
         label: t("proportional"),
         submenu: buildProportionalSubmenu(),
       },
@@ -481,10 +486,6 @@ module.exports = function initMenu(ctx) {
     }
     template.push(
       { type: "separator" },
-      {
-        label: t("moodHistory"),
-        click: () => ctx.openMoodHistoryWindow(),
-      },
       {
         label: t("settings"),
         click: () => ctx.openSettingsWindow(),
