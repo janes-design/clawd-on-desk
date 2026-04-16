@@ -5,130 +5,201 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Today's Mood</title>
   <style>
+    /* ── Claude Design System ─────────────────────────────────────────────── */
+    /* Light: Parchment canvas, Ivory cards, warm-toned neutrals, ring shadows */
+    /* Dark:  Near Black canvas, Dark Surface cards, Warm Silver text          */
+
     :root {
-      --bg: #f5f5f7;
-      --card: #ffffff;
-      --text: #1d1d1f;
-      --sub: #86868b;
-      --border: #d2d2d7;
-      --radius: 10px;
+      --bg:          #f5f4ed; /* Parchment */
+      --card:        #faf9f5; /* Ivory */
+      --text:        #141413; /* Anthropic Near Black */
+      --text-2:      #5e5d59; /* Olive Gray */
+      --text-3:      #87867f; /* Stone Gray */
+      --border:      #f0eee6; /* Border Cream */
+      --border-warm: #e8e6dc; /* Border Warm */
+      --ring:        #d1cfc5; /* Ring Warm */
+      --accent:      #c96442; /* Terracotta Brand */
+      --accent-2:    #d97757; /* Coral Accent */
+      --error:       #b53333; /* Error Crimson */
     }
     @media (prefers-color-scheme: dark) {
       :root {
-        --bg: #1c1c1f;
-        --card: #2c2c2e;
-        --text: #f5f5f7;
-        --sub: #98989d;
-        --border: #3a3a3c;
+        --bg:          #141413; /* Deep Dark */
+        --card:        #30302e; /* Dark Surface */
+        --text:        #faf9f5; /* Ivory */
+        --text-2:      #b0aea5; /* Warm Silver */
+        --text-3:      #87867f; /* Stone Gray */
+        --border:      #30302e;
+        --border-warm: #3d3d3a;
+        --ring:        #3d3d3a;
       }
     }
 
     * { box-sizing: border-box; margin: 0; padding: 0; }
 
     body {
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      font-family: -apple-system, "Arial", sans-serif; /* Anthropic Sans → Arial */
       background: var(--bg);
       color: var(--text);
-      padding: 20px;
+      padding: 24px;
       user-select: none;
       -webkit-user-select: none;
+      min-height: 100vh;
     }
 
+    /* ── Header ─────────────────────────────────────────────────────────── */
+    .header { margin-bottom: 20px; }
+
     h1 {
-      font-size: 17px;
-      font-weight: 600;
-      margin-bottom: 2px;
+      font-family: Georgia, serif; /* Anthropic Serif → Georgia */
+      font-size: 25px;
+      font-weight: 500;           /* single weight — weight 500 is the ceiling */
+      line-height: 1.20;
+      letter-spacing: normal;
+      color: var(--text);
+      margin-bottom: 4px;
     }
 
     .date {
-      font-size: 12px;
-      color: var(--sub);
-      margin-bottom: 16px;
+      font-size: 13px;
+      font-weight: 400;
+      color: var(--text-3);       /* Stone Gray — tertiary metadata */
+      line-height: 1.60;
     }
 
-    /* Stacked bar */
+    /* ── Stacked bar ─────────────────────────────────────────────────────── */
     .bar-wrap {
-      background: var(--border);
-      border-radius: 6px;
+      background: var(--border-warm);
+      border-radius: 8px;         /* Comfortably rounded */
       overflow: hidden;
-      height: 28px;
+      height: 24px;
       display: flex;
-      margin-bottom: 16px;
+      margin-bottom: 20px;
+      box-shadow: 0px 0px 0px 1px var(--ring); /* Ring shadow — no drop shadow */
     }
     .bar-seg {
       height: 100%;
-      transition: width 0.4s ease;
+      transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
     }
 
-    /* Stat grid */
+    /* ── Divider ─────────────────────────────────────────────────────────── */
+    .divider {
+      height: 1px;
+      background: var(--border);
+      margin-bottom: 16px;
+    }
+
+    /* ── Stat grid ───────────────────────────────────────────────────────── */
     .grid {
       display: grid;
       grid-template-columns: repeat(3, 1fr);
       gap: 8px;
-      margin-bottom: 16px;
+      margin-bottom: 20px;
     }
+
     .stat {
       background: var(--card);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      padding: 10px 12px;
+      border: 1px solid var(--border);          /* Border Cream containment */
+      border-radius: 8px;                        /* Comfortably rounded */
+      padding: 12px 14px;
       display: flex;
-      align-items: center;
-      gap: 8px;
+      align-items: flex-start;
+      gap: 10px;
+      box-shadow: 0px 0px 0px 1px var(--ring);  /* Ring shadow */
+      transition: box-shadow 0.15s ease;
     }
-    .stat-dot {
+    .stat:hover {
+      box-shadow: 0px 0px 0px 1px var(--ring), rgba(0,0,0,0.05) 0px 4px 24px; /* Whisper lift on hover */
+    }
+
+    .stat-swatch {
       width: 10px;
       height: 10px;
-      border-radius: 2px;
+      border-radius: 3px;                        /* Subtly rounded */
       flex-shrink: 0;
+      margin-top: 4px;
     }
-    .stat-body { min-width: 0; }
+
+    .stat-body { min-width: 0; flex: 1; }
+
     .stat-label {
       font-size: 11px;
-      color: var(--sub);
+      font-weight: 500;
+      color: var(--text-3);                      /* Stone Gray — de-emphasized */
+      letter-spacing: 0.12px;                    /* Micro letter-spacing for small labels */
+      line-height: 1.60;
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
-    }
-    .stat-time {
-      font-size: 15px;
-      font-weight: 600;
-      font-variant-numeric: tabular-nums;
-      line-height: 1.2;
+      text-transform: uppercase;
     }
 
-    .total {
-      font-size: 12px;
-      color: var(--sub);
+    .stat-time {
+      font-family: Georgia, serif;               /* Serif for the key number */
+      font-size: 18px;
+      font-weight: 500;
+      color: var(--text);
+      line-height: 1.20;
+      font-variant-numeric: tabular-nums;
+    }
+
+    /* ── Footer total ────────────────────────────────────────────────────── */
+    .footer {
       text-align: center;
+      font-size: 12px;
+      color: var(--text-3);
+      line-height: 1.60;
+      letter-spacing: 0.12px;
+    }
+
+    /* ── Empty state ─────────────────────────────────────────────────────── */
+    .empty {
+      text-align: center;
+      padding: 32px 0;
+      color: var(--text-3);
+      font-size: 14px;
+      line-height: 1.60;
+    }
+    .empty-title {
+      font-family: Georgia, serif;
+      font-size: 17px;
+      font-weight: 500;
+      color: var(--text-2);
+      margin-bottom: 6px;
     }
   </style>
 </head>
 <body>
-  <h1>Today's Mood</h1>
-  <div class="date" id="date-label"></div>
+  <div class="header">
+    <h1>Today's Mood</h1>
+    <div class="date" id="date-label"></div>
+  </div>
+
   <div class="bar-wrap" id="bar"></div>
+  <div class="divider"></div>
   <div class="grid" id="grid"></div>
-  <div class="total" id="total"></div>
+  <div class="footer" id="footer"></div>
 
   <script>
+    /* ── State colour palette (warm-toned, no cool grays) ──────────────── */
     const GROUPS = [
-      { key: "working",      label: "Working",      color: "#34c759", states: ["working"] },
-      { key: "thinking",     label: "Thinking",     color: "#007aff", states: ["thinking"] },
-      { key: "done",         label: "Done",         color: "#ff9f0a", states: ["attention"] },
-      { key: "notification", label: "Notified",     color: "#bf5af2", states: ["notification"] },
-      { key: "error",        label: "Error",        color: "#ff3b30", states: ["error"] },
-      { key: "idle",         label: "Idle",         color: "#aeaeb2", states: ["idle", "idle-look", "idle-follow", "idle-living", "waking"] },
-      { key: "sleeping",     label: "Sleeping",     color: "#636366", states: ["sleeping", "dozing", "yawning", "collapsing"] },
+      { key: "working",      label: "Working",     color: "#c96442", states: ["working"] },
+      { key: "thinking",     label: "Thinking",    color: "#d97757", states: ["thinking"] },
+      { key: "done",         label: "Done",        color: "#87a84a", states: ["attention"] },
+      { key: "notification", label: "Notified",    color: "#8b7355", states: ["notification"] },
+      { key: "error",        label: "Error",       color: "#b53333", states: ["error"] },
+      { key: "idle",         label: "Idle",        color: "#b0aea5", states: ["idle", "idle-look", "idle-follow", "idle-living", "waking"] },
+      { key: "sleeping",     label: "Sleeping",    color: "#87867f", states: ["sleeping", "dozing", "yawning", "collapsing"] },
     ];
 
-    // States to skip entirely (mini-mode, transitions we don't care about)
-    const SKIP = new Set(["mini-idle","mini-enter","mini-peek","mini-alert","mini-happy","mini-crabwalk","mini-enter-sleep","mini-sleep","juggling","sweeping","carrying"]);
+    const SKIP = new Set([
+      "mini-idle","mini-enter","mini-peek","mini-alert","mini-happy",
+      "mini-crabwalk","mini-enter-sleep","mini-sleep",
+      "juggling","sweeping","carrying",
+    ]);
 
     function groupOf(state) {
-      for (const g of GROUPS) {
-        if (g.states.includes(state)) return g.key;
-      }
+      for (const g of GROUPS) if (g.states.includes(state)) return g.key;
       return null;
     }
 
@@ -145,11 +216,10 @@
     async function render() {
       const raw = await window.moodAPI.getData();
 
-      // Aggregate ms per group
       const totals = {};
       for (const g of GROUPS) totals[g.key] = 0;
-
       let grandTotal = 0;
+
       for (const entry of raw) {
         if (SKIP.has(entry.state)) continue;
         const g = groupOf(entry.state);
@@ -159,7 +229,7 @@
         grandTotal += dur;
       }
 
-      // Date label
+      // Date
       document.getElementById("date-label").textContent =
         new Date().toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric" });
 
@@ -169,7 +239,7 @@
       if (grandTotal === 0) {
         const seg = document.createElement("div");
         seg.className = "bar-seg";
-        seg.style.cssText = `width:100%;background:var(--border)`;
+        seg.style.cssText = "width:100%;background:var(--border-warm)";
         bar.appendChild(seg);
       } else {
         for (const g of GROUPS) {
@@ -186,26 +256,36 @@
       // Stat grid
       const grid = document.getElementById("grid");
       grid.innerHTML = "";
+
+      if (grandTotal === 0) {
+        grid.style.display = "none";
+        document.getElementById("footer").innerHTML = `
+          <div class="empty">
+            <div class="empty-title">No activity yet</div>
+            Start a Claude Code session and come back soon.
+          </div>`;
+        return;
+      }
+
+      grid.style.display = "grid";
       for (const g of GROUPS) {
-        if (!totals[g.key] && grandTotal > 0) continue; // hide zero entries when there's real data
+        if (!totals[g.key]) continue;
         const card = document.createElement("div");
         card.className = "stat";
         card.innerHTML = `
-          <div class="stat-dot" style="background:${g.color}"></div>
+          <div class="stat-swatch" style="background:${g.color}"></div>
           <div class="stat-body">
             <div class="stat-label">${g.label}</div>
-            <div class="stat-time">${grandTotal > 0 ? fmtDuration(totals[g.key]) : "—"}</div>
+            <div class="stat-time">${fmtDuration(totals[g.key])}</div>
           </div>`;
         grid.appendChild(card);
       }
 
-      // Total
-      document.getElementById("total").textContent =
-        grandTotal > 0 ? `Total tracked: ${fmtDuration(grandTotal)}` : "No activity tracked yet today.";
+      document.getElementById("footer").textContent =
+        `${fmtDuration(grandTotal)} tracked today`;
     }
 
     render();
-    // Refresh every 10s so the window stays live
     setInterval(render, 10000);
   </script>
 </body>
