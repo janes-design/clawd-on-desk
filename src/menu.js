@@ -482,6 +482,10 @@ module.exports = function initMenu(ctx) {
     template.push(
       { type: "separator" },
       {
+        label: t("moodHistory"),
+        click: () => ctx.openMoodHistoryWindow(),
+      },
+      {
         label: t("settings"),
         click: () => ctx.openSettingsWindow(),
       },

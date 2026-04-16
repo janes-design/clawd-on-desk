@@ -54,6 +54,10 @@ let DISPLAY_HINT_MAP = {};
 // ── Session tracking ──
 const sessions = new Map();
 const MAX_SESSIONS = 20;
+
+// ── Mood history ──
+const moodHistory = [];
+const MOOD_HISTORY_MAX = 2000;
 const SESSION_STALE_MS = 600000;
 const WORKING_STALE_MS = 300000;
 let startupRecoveryActive = false;
@@ -301,9 +305,14 @@ function applyState(state, svgOverride) {
     return;
   }
 
+  // Record completed interval before transitioning
+  const now = Date.now();
+  moodHistory.push({ state: currentState, startedAt: stateChangedAt, endedAt: now });
+  if (moodHistory.length > MOOD_HISTORY_MAX) moodHistory.shift();
+
   previousState = currentState;
   currentState = state;
-  stateChangedAt = Date.now();
+  stateChangedAt = now;
   ctx.idlePaused = false;
 
   // Sound triggers
@@ -959,6 +968,13 @@ return {
   detectRunningAgentProcesses, buildSessionSubmenu,
   clearSessionsByAgent,
   getCurrentState, getCurrentSvg, getCurrentHitBox, getStartupRecoveryActive,
+  getMoodHistory: () => {
+    const todayStr = new Date().toDateString();
+    const filtered = moodHistory.filter(e => new Date(e.startedAt).toDateString() === todayStr);
+    // Append the current in-progress interval
+    filtered.push({ state: currentState, startedAt: stateChangedAt, endedAt: Date.now() });
+    return filtered;
+  },
   sessions, STATE_PRIORITY, ONESHOT_STATES, SLEEP_SEQUENCE,
   get STATE_SVGS() { return STATE_SVGS; },
   get HIT_BOXES() { return HIT_BOXES; },

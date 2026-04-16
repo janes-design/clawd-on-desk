@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Today's Mood</title>
+  <style>
+    :root {
+      --bg: #f5f5f7;
+      --card: #ffffff;
+      --text: #1d1d1f;
+      --sub: #86868b;
+      --border: #d2d2d7;
+      --radius: 10px;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #1c1c1f;
+        --card: #2c2c2e;
+        --text: #f5f5f7;
+        --sub: #98989d;
+        --border: #3a3a3c;
+      }
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      padding: 20px;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    h1 {
+      font-size: 17px;
+      font-weight: 600;
+      margin-bottom: 2px;
+    }
+
+    .date {
+      font-size: 12px;
+      color: var(--sub);
+      margin-bottom: 16px;
+    }
+
+    /* Stacked bar */
+    .bar-wrap {
+      background: var(--border);
+      border-radius: 6px;
+      overflow: hidden;
+      height: 28px;
+      display: flex;
+      margin-bottom: 16px;
+    }
+    .bar-seg {
+      height: 100%;
+      transition: width 0.4s ease;
+    }
+
+    /* Stat grid */
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+    .stat {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 10px 12px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .stat-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 2px;
+      flex-shrink: 0;
+    }
+    .stat-body { min-width: 0; }
+    .stat-label {
+      font-size: 11px;
+      color: var(--sub);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .stat-time {
+      font-size: 15px;
+      font-weight: 600;
+      font-variant-numeric: tabular-nums;
+      line-height: 1.2;
+    }
+
+    .total {
+      font-size: 12px;
+      color: var(--sub);
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+  <h1>Today's Mood</h1>
+  <div class="date" id="date-label"></div>
+  <div class="bar-wrap" id="bar"></div>
+  <div class="grid" id="grid"></div>
+  <div class="total" id="total"></div>
+
+  <script>
+    const GROUPS = [
+      { key: "working",      label: "Working",      color: "#34c759", states: ["working"] },
+      { key: "thinking",     label: "Thinking",     color: "#007aff", states: ["thinking"] },
+      { key: "done",         label: "Done",         color: "#ff9f0a", states: ["attention"] },
+      { key: "notification", label: "Notified",     color: "#bf5af2", states: ["notification"] },
+      { key: "error",        label: "Error",        color: "#ff3b30", states: ["error"] },
+      { key: "idle",         label: "Idle",         color: "#aeaeb2", states: ["idle", "idle-look", "idle-follow", "idle-living", "waking"] },
+      { key: "sleeping",     label: "Sleeping",     color: "#636366", states: ["sleeping", "dozing", "yawning", "collapsing"] },
+    ];
+
+    // States to skip entirely (mini-mode, transitions we don't care about)
+    const SKIP = new Set(["mini-idle","mini-enter","mini-peek","mini-alert","mini-happy","mini-crabwalk","mini-enter-sleep","mini-sleep","juggling","sweeping","carrying"]);
+
+    function groupOf(state) {
+      for (const g of GROUPS) {
+        if (g.states.includes(state)) return g.key;
+      }
+      return null;
+    }
+
+    function fmtDuration(ms) {
+      const s = Math.floor(ms / 1000);
+      if (s < 60) return `${s}s`;
+      const m = Math.floor(s / 60);
+      if (m < 60) return `${m}m`;
+      const h = Math.floor(m / 60);
+      const rm = m % 60;
+      return rm > 0 ? `${h}h ${rm}m` : `${h}h`;
+    }
+
+    async function render() {
+      const raw = await window.moodAPI.getData();
+
+      // Aggregate ms per group
+      const totals = {};
+      for (const g of GROUPS) totals[g.key] = 0;
+
+      let grandTotal = 0;
+      for (const entry of raw) {
+        if (SKIP.has(entry.state)) continue;
+        const g = groupOf(entry.state);
+        if (!g) continue;
+        const dur = Math.max(0, entry.endedAt - entry.startedAt);
+        totals[g] += dur;
+        grandTotal += dur;
+      }
+
+      // Date label
+      document.getElementById("date-label").textContent =
+        new Date().toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric" });
+
+      // Stacked bar
+      const bar = document.getElementById("bar");
+      bar.innerHTML = "";
+      if (grandTotal === 0) {
+        const seg = document.createElement("div");
+        seg.className = "bar-seg";
+        seg.style.cssText = `width:100%;background:var(--border)`;
+        bar.appendChild(seg);
+      } else {
+        for (const g of GROUPS) {
+          if (!totals[g.key]) continue;
+          const seg = document.createElement("div");
+          seg.className = "bar-seg";
+          const pct = (totals[g.key] / grandTotal * 100).toFixed(2);
+          seg.style.cssText = `width:${pct}%;background:${g.color}`;
+          seg.title = `${g.label}: ${fmtDuration(totals[g.key])}`;
+          bar.appendChild(seg);
+        }
+      }
+
+      // Stat grid
+      const grid = document.getElementById("grid");
+      grid.innerHTML = "";
+      for (const g of GROUPS) {
+        if (!totals[g.key] && grandTotal > 0) continue; // hide zero entries when there's real data
+        const card = document.createElement("div");
+        card.className = "stat";
+        card.innerHTML = `
+          <div class="stat-dot" style="background:${g.color}"></div>
+          <div class="stat-body">
+            <div class="stat-label">${g.label}</div>
+            <div class="stat-time">${grandTotal > 0 ? fmtDuration(totals[g.key]) : "—"}</div>
+          </div>`;
+        grid.appendChild(card);
+      }
+
+      // Total
+      document.getElementById("total").textContent =
+        grandTotal > 0 ? `Total tracked: ${fmtDuration(grandTotal)}` : "No activity tracked yet today.";
+    }
+
+    render();
+    // Refresh every 10s so the window stays live
+    setInterval(render, 10000);
+  </script>
+</body>
+</html>

@@ -855,6 +855,7 @@ const _menuCtx = {
   getActiveThemeCapabilities: () => activeTheme ? activeTheme._capabilities : null,
   ensureUserThemesDir: () => themeLoader.ensureUserThemesDir(),
   openSettingsWindow: () => openSettingsWindow(),
+  openMoodHistoryWindow: () => openMoodHistoryWindow(),
 };
 const _menu = require("./menu")(_menuCtx);
 const { t, buildContextMenu, buildTrayMenu, rebuildAllMenus, createTray,
@@ -1391,6 +1392,8 @@ function _previewAnimationOverride(payload) {
 }
 
 // ── IPC: settings panel write entry points ──
+ipcMain.handle("mood-history:get", () => _state.getMoodHistory());
+
 // Renderer-side callers (the future settings panel) use these. Menu/main code
 // in this process calls _settingsController directly — no IPC round-trip.
 ipcMain.handle("settings:get-snapshot", () => _settingsController.getSnapshot());
@@ -1609,6 +1612,45 @@ function getSettingsWindowIcon() {
   // Linux: build config points at assets/icons/, but those aren't shipped in
   // files[]. Skip the icon — the .desktop file (deb/AppImage) provides one.
   return undefined;
+}
+
+let moodHistoryWindow = null;
+function openMoodHistoryWindow() {
+  if (moodHistoryWindow && !moodHistoryWindow.isDestroyed()) {
+    if (moodHistoryWindow.isMinimized()) moodHistoryWindow.restore();
+    moodHistoryWindow.show();
+    moodHistoryWindow.focus();
+    return;
+  }
+  const opts = {
+    width: 480,
+    height: 380,
+    minWidth: 400,
+    minHeight: 320,
+    show: false,
+    frame: true,
+    transparent: false,
+    resizable: true,
+    minimizable: false,
+    maximizable: false,
+    skipTaskbar: false,
+    alwaysOnTop: false,
+    title: "Today's Mood",
+    backgroundColor: nativeTheme.shouldUseDarkColors ? "#1c1c1f" : "#f5f5f7",
+    webPreferences: {
+      preload: path.join(__dirname, "preload-mood-history.js"),
+      nodeIntegration: false,
+      contextIsolation: true,
+    },
+  };
+  moodHistoryWindow = new BrowserWindow(opts);
+  moodHistoryWindow.setMenuBarVisibility(false);
+  moodHistoryWindow.loadFile(path.join(__dirname, "mood-history.html"));
+  moodHistoryWindow.once("ready-to-show", () => {
+    moodHistoryWindow.show();
+    moodHistoryWindow.focus();
+  });
+  moodHistoryWindow.on("closed", () => { moodHistoryWindow = null; });
 }
 
 function openSettingsWindow() {
