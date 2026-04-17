@@ -2268,6 +2268,13 @@ if (!gotTheLock) {
     reapplyMacVisibility();
   });
 
+  // macOS: set custom dock icon in dev mode (packaged builds use the .app bundle icon)
+  if (isMac && app.dock && !app.isPackaged) {
+    const { nativeImage } = require("electron");
+    const dockIcon = nativeImage.createFromPath(path.join(__dirname, "../assets/icons/dock-512.png"));
+    if (!dockIcon.isEmpty()) app.dock.setIcon(dockIcon);
+  }
+
   // macOS: hide dock icon early if user previously disabled it
   if (isMac && app.dock) {
     if (_settingsController.get("showDock") === false) {
