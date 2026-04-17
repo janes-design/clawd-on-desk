@@ -553,6 +553,7 @@ function reapplyMacVisibility() {
 
 // ── State machine — delegated to src/state.js ──
 const _stateCtx = {
+  userDataPath: app.getPath("userData"),
   get theme() { return activeTheme; },
   get win() { return win; },
   get hitWin() { return hitWin; },

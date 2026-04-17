@@ -56,8 +56,59 @@ const sessions = new Map();
 const MAX_SESSIONS = 20;
 
 // ── Mood history ──
-const moodHistory = [];
 const MOOD_HISTORY_MAX = 2000;
+
+function _moodDateStr(ts) {
+  return new Date(ts).toISOString().slice(0, 10); // "YYYY-MM-DD"
+}
+
+function _moodFilePath(userDataPath, dateStr) {
+  return path.join(userDataPath, `mood-${dateStr}.json`);
+}
+
+function _loadTodayMoodHistory(userDataPath) {
+  try {
+    const file = _moodFilePath(userDataPath, _moodDateStr(Date.now()));
+    if (!fs.existsSync(file)) return [];
+    const raw = fs.readFileSync(file, "utf8");
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch { return []; }
+}
+
+function _saveMoodHistory(userDataPath, entries) {
+  try {
+    const todayStr = _moodDateStr(Date.now());
+    const todayEntries = entries.filter(e => _moodDateStr(e.startedAt) === todayStr);
+    const file = _moodFilePath(userDataPath, todayStr);
+    fs.mkdirSync(path.dirname(file), { recursive: true });
+    fs.writeFileSync(file, JSON.stringify(todayEntries), "utf8");
+  } catch (e) { /* non-fatal */ }
+}
+
+function _cleanOldMoodFiles(userDataPath) {
+  try {
+    const cutoff = Date.now() - 7 * 24 * 60 * 60 * 1000;
+    const files = fs.readdirSync(userDataPath).filter(f => /^mood-\d{4}-\d{2}-\d{2}\.json$/.test(f));
+    for (const f of files) {
+      const dateStr = f.slice(5, 15); // "YYYY-MM-DD"
+      if (new Date(dateStr).getTime() < cutoff) {
+        fs.unlinkSync(path.join(userDataPath, f));
+      }
+    }
+  } catch { /* non-fatal */ }
+}
+
+let _moodSaveTimer = null;
+function _scheduleMoodSave(userDataPath, entries) {
+  if (_moodSaveTimer) clearTimeout(_moodSaveTimer);
+  _moodSaveTimer = setTimeout(() => {
+    _saveMoodHistory(userDataPath, entries);
+    _moodSaveTimer = null;
+  }, 2000);
+}
+
+const moodHistory = [];
 const SESSION_STALE_MS = 600000;
 const WORKING_STALE_MS = 300000;
 let startupRecoveryActive = false;
@@ -75,6 +126,13 @@ let currentState = "idle";
 let previousState = "idle";
 let currentSvg = null;
 let stateChangedAt = Date.now();
+
+// Load today's mood history from disk on startup
+if (ctx.userDataPath) {
+  const saved = _loadTodayMoodHistory(ctx.userDataPath);
+  moodHistory.push(...saved);
+  _cleanOldMoodFiles(ctx.userDataPath);
+}
 let pendingTimer = null;
 let autoReturnTimer = null;
 let pendingState = null;
@@ -309,6 +367,7 @@ function applyState(state, svgOverride) {
   const now = Date.now();
   moodHistory.push({ state: currentState, startedAt: stateChangedAt, endedAt: now });
   if (moodHistory.length > MOOD_HISTORY_MAX) moodHistory.shift();
+  if (ctx.userDataPath) _scheduleMoodSave(ctx.userDataPath, moodHistory);
 
   previousState = currentState;
   currentState = state;
