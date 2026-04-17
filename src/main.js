@@ -1,4 +1,5 @@
 const { app, BrowserWindow, screen, Menu, ipcMain, globalShortcut, nativeTheme, dialog, shell } = require("electron");
+app.setName("Clawd");
 const path = require("path");
 const fs = require("fs");
 const { pathToFileURL } = require("url");
