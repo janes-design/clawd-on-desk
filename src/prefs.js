@@ -18,6 +18,7 @@
 
 const fs = require("fs");
 const path = require("path");
+const { isPlainObject } = require("./theme-loader");
 
 const CURRENT_VERSION = 1;
 
@@ -194,10 +195,6 @@ function normalizeAgents(value, defaultsValue) {
   return out;
 }
 
-function isPlainObject(value) {
-  return !!value && typeof value === "object" && !Array.isArray(value);
-}
-
 function normalizeTransitionOverride(value) {
   if (!isPlainObject(value)) return null;
   const out = {};
@@ -229,18 +226,7 @@ function normalizeStateOverridesMap(value) {
   return Object.keys(out).length > 0 ? out : null;
 }
 
-function normalizeTierOverrideGroup(value) {
-  if (!isPlainObject(value)) return null;
-  const out = {};
-  for (const [originalFile, entry] of Object.entries(value)) {
-    if (typeof originalFile !== "string" || !originalFile) continue;
-    const cleanEntry = normalizeSlotOverride(entry, { allowDisabled: false });
-    if (cleanEntry) out[originalFile] = cleanEntry;
-  }
-  return Object.keys(out).length > 0 ? out : null;
-}
-
-function normalizeIdleAnimationOverrides(value) {
+function normalizeFileKeyedOverrideMap(value) {
   if (!isPlainObject(value)) return null;
   const out = {};
   for (const [originalFile, entry] of Object.entries(value)) {
@@ -285,8 +271,8 @@ function normalizeThemeOverrides(value, defaultsValue) {
     const tierGroups = isPlainObject(themeMap.tiers) ? themeMap.tiers : null;
     const cleanTiers = {};
     if (tierGroups) {
-      const working = normalizeTierOverrideGroup(tierGroups.workingTiers);
-      const juggling = normalizeTierOverrideGroup(tierGroups.jugglingTiers);
+      const working = normalizeFileKeyedOverrideMap(tierGroups.workingTiers);
+      const juggling = normalizeFileKeyedOverrideMap(tierGroups.jugglingTiers);
       if (working) cleanTiers.workingTiers = working;
       if (juggling) cleanTiers.jugglingTiers = juggling;
     }
@@ -300,7 +286,7 @@ function normalizeThemeOverrides(value, defaultsValue) {
       }
     }
 
-    const idleAnimations = normalizeIdleAnimationOverrides(themeMap.idleAnimations);
+    const idleAnimations = normalizeFileKeyedOverrideMap(themeMap.idleAnimations);
     if (idleAnimations) cleanThemeMap.idleAnimations = idleAnimations;
 
     if (Object.keys(cleanThemeMap).length > 0) {

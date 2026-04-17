@@ -49,6 +49,7 @@
 // keep validate side-effect-free.
 
 const { CURRENT_VERSION, AGENT_FLAGS } = require("./prefs");
+const { isPlainObject } = require("./theme-loader");
 
 // ── Validator helpers ──
 
@@ -100,10 +101,6 @@ function requirePlainObject(key) {
   };
 }
 
-function isPlainObject(value) {
-  return !!value && typeof value === "object" && !Array.isArray(value);
-}
-
 const THEME_OVERRIDE_RESERVED_KEYS = new Set(["states", "tiers", "timings", "idleAnimations"]);
 const TIER_OVERRIDE_GROUPS = new Set(["workingTiers", "jugglingTiers"]);
 
@@ -122,15 +119,18 @@ function cloneStateOverrides(themeMap) {
   return out;
 }
 
-function cloneTierOverrides(themeMap, tierGroup) {
+function cloneFileKeyedMap(map) {
   const out = {};
-  if (!isPlainObject(themeMap) || !isPlainObject(themeMap.tiers)) return out;
-  const group = themeMap.tiers[tierGroup];
-  if (!isPlainObject(group)) return out;
-  for (const [originalFile, entry] of Object.entries(group)) {
+  if (!isPlainObject(map)) return out;
+  for (const [originalFile, entry] of Object.entries(map)) {
     if (isPlainObject(entry)) out[originalFile] = { ...entry };
   }
   return out;
+}
+
+function cloneTierOverrides(themeMap, tierGroup) {
+  if (!isPlainObject(themeMap) || !isPlainObject(themeMap.tiers)) return {};
+  return cloneFileKeyedMap(themeMap.tiers[tierGroup]);
 }
 
 function cloneAutoReturnOverrides(themeMap) {
@@ -145,12 +145,8 @@ function cloneAutoReturnOverrides(themeMap) {
 }
 
 function cloneIdleAnimationOverrides(themeMap) {
-  const out = {};
-  if (!isPlainObject(themeMap) || !isPlainObject(themeMap.idleAnimations)) return out;
-  for (const [originalFile, entry] of Object.entries(themeMap.idleAnimations)) {
-    if (isPlainObject(entry)) out[originalFile] = { ...entry };
-  }
-  return out;
+  if (!isPlainObject(themeMap)) return {};
+  return cloneFileKeyedMap(themeMap.idleAnimations);
 }
 
 function buildThemeOverrideMap({ states, workingTiers, jugglingTiers, autoReturn, idleAnimations }) {
