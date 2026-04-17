@@ -59,7 +59,8 @@ const MAX_SESSIONS = 20;
 const MOOD_HISTORY_MAX = 2000;
 
 function _moodDateStr(ts) {
-  return new Date(ts).toISOString().slice(0, 10); // "YYYY-MM-DD"
+  const d = new Date(ts);
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`; // local date
 }
 
 function _moodFilePath(userDataPath, dateStr) {
